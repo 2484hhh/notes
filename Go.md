@@ -822,7 +822,7 @@ go语言中函数可以有多个返回值：
 
 ### 2.4 匿名函数
 
-​	Go 支持匿名函数，匿名函数就是没有名字的函数，如果我们某个函数只是希望使用一次，可以考虑使用匿名函数，匿名函数也可以实现多次调用。
+​	Go 支持匿名函数，匿名函数就是没有名字的函数，如果我们某个函数只是希望使用一次，可以考虑使用匿名函数，匿名函数也可以实现多次调用。匿名函给变量赋值在最后的括号中！
 
 #### 1.使用方式
 
@@ -1391,7 +1391,7 @@ func main() {
 ![image-20211021095626875](E:\typroa_pic\image-20211021095626875.png)
 
 ```go
-1. slice 的确是一个引用类型
+1. slice 是一个引用类型
 2. slice 从底层来说，其实就是一个数据结构(struct 结构体)
    type slice struct {
    ptr*[2]int
@@ -1674,6 +1674,8 @@ var 数组名	= [...] [大小]类型{{初值..},{初值..}}
 
 map 是 key-value 数据结构，又称为字段或者关联数组。
 
+内置map类型不支持并发安全，Go中有sync.Map类型，支持并发，另有一套方法
+
 ## 2. 基本语法
 
 ```go
@@ -1750,15 +1752,15 @@ func main() {
 
 ## 4. map的增删查改和遍历
 
-1.map 增加和更新：
+**1.map 增加和更新：**
 map["key"] = value //如果 key 还没有，就是增加，如果 key 存在就是修改
 
-2.map 删除：	
-		delete(map，"key") ，delete 是一个内置函数，如果 key 存在，就删除该 key-value,如果 key 不存在，不操作，但是也不会报错3.
+**2.map 删除：	**
+		`delete(map，"key")` ，`delete `是一个内置函数，如果 key 存在，就删除该 key-value,如果 key 不存在，不操作，但是也不会报错3.
 
 ​		如果我们要删除 map 的所有 key ,没有一个专门的方法一次删除，可以遍历一下 key, 逐个删除或者 map = make(...)，make 一个新的，让原来的成为垃圾，被 gc 回收
 
-3.map 查找
+**3.map 查找**
 
 ```go
 val, ok := cities["no2"]
@@ -1787,7 +1789,7 @@ func main() {
 	cities["no3"] = "上海~" 
 	fmt.Println(cities)
 
-	//演示删除
+	//删除
 	delete(cities, "no1")
 	fmt.Println(cities)
 	//当delete指定的key不存在时，删除不会操作，也不会报错
@@ -1795,7 +1797,7 @@ func main() {
 	fmt.Println(cities)
 
 
-	//演示map的查找
+	//map的查找
 	val, ok := cities["no2"]
 	if ok {
 		fmt.Printf("有no1 key 值为%v\n", val)
@@ -1812,7 +1814,7 @@ func main() {
 }
 ```
 
-4.map遍历
+**4.map遍历**
 
 ```go
 package main
@@ -2011,6 +2013,8 @@ Score float32
 ```
 
 在创建一个结构体变量后，如果没有给字段赋值，都对应一个零值(默认值):
+
+**结构体内部字段的顺序也和内存对齐有关，分配连续的内存，而cpu是一个字节一个字节的读，应合理定义字段顺序，使之刚好可以凑齐**
 
 布尔类型是 false ，数值是 0 ，字符串是 " "。数组类型的默认值和它的元素类型相关，比如 score [3]int 则为[0, 0, 0]；
 
@@ -3911,7 +3915,7 @@ PS:
 
 ## 1. 基本介绍
 
-​		Go 语言中自带有一个轻量级的测试框架 testing 和自带的 go test 命令来实现单元测试和性能测试，testing 框架和其他语言中的测试框架类似，可以基于这个框架写针对相应函数的测试用例，也可以基于该框架写相应的压力测试用例。
+​		Go 语言中自带有一个轻量级的测试框架 testing 和自带的 go test 命令来实现单元测试和性能测试
 
 ![image-20211027103505838](E:\typroa_pic\image-20211027103505838.png)
 
@@ -3919,6 +3923,16 @@ PS:
 func TestXxx(*testing.T)
 //其中 Xxx 可以是任何字母数字字符串（但第一个字母不能是 [a-z]）
 ```
+
+​		在`*_test.go`文件中有三种类型的函数，单元测试函数、基准测试函数和示例函数。
+
+|   类型   |         格式          |              作用              |
+| :------: | :-------------------: | :----------------------------: |
+| 测试函数 |   函数名前缀为Test    | 测试程序的一些逻辑行为是否正确 |
+| 基准函数 | 函数名前缀为Benchmark |         测试函数的性能         |
+| 示例函数 |  函数名前缀为Example  |       为文档提供示例文档       |
+
+`go test`命令会遍历所有的`*_test.go`文件中符合上述命名规则的函数，然后生成一个临时的main包用于调用相应的测试函数，然后构建并运行、报告测试结果，最后清理测试中生成的临时文件。
 
 ## 2. 注意事项
 
@@ -4117,6 +4131,16 @@ func main(){
 ### 2. goroutine的调度模型
 
 #### 1. MPG 模式基本介绍
+
+GMP模型运行的基本过程：
+
+首先创建一个G对象，然后G被保存在P的本地队列或者全局队列
+
+这时P会唤醒一个M，M寻找一个空闲的P将G移动到它自己，然后M执行一个调度循环：调用G对象->执行->清理线程->继续寻找Goroutine。
+
+在M的执行过程中，上下文切换随时发生。当切换发生，任务的执行现场需要被保护，这样在下一次调度执行可以进行现场恢复。
+
+M的栈保存在G对象，只有现场恢复需要的寄存器(SP,PC等)，需要被保存到G对象。
 
 ![image-20211027151054920](E:\typroa_pic\image-20211027151054920.png)
 
@@ -5072,5 +5096,2739 @@ func main() {
 
 ```
 
-# 第十四章、Redis使用
+# 第十四章、数据库使用
 
+## 1. Redis
+
+说明: Redis 安装好后，默认有 16 个数据库，初始默认使用 0 号库, 编号是 0...15
+
+1. 切换 redis 数据库 [select index]
+
+2. 如何查看当前数据库的 key-val 数量 [dbsize]
+
+3. 清空当前数据库的 key-val 和清空所有数据库的 key-val [flushdb flushall]
+
+> 1. 知道redis是什么?
+>    - 非关系型数据库 也可以叫 内存数据库
+> 2. 能干什么?
+>    - 存储访问频率高的数据
+>    - 共享内存
+>      - 服务器端 -> redis
+> 3. 怎么使用?
+>    - 常用的操作命令
+>      - 各种数据类型 -> 会查
+>    - redis的配置文件
+>    - redis的数据持久化
+>    - 写程序的时候如何对redis进行操作
+>      - 客户端 -> 服务器
+
+### 1.1 基本知识点
+
+1. 安装包下载
+
+   - 英文官方： <https://redis.io/>
+   - 中文官方： <http://redis.cn/>
+
+2. Redis安装
+
+   - make
+   - make install
+
+3. redis中的两个角色
+
+   ```shell
+   # 服务器 - 启动
+   redis-server	# 默认启动
+   redis-server confFileName # 根据配置文件的设置启动
+   # 客户端
+   redis-cli	# 默认连接本地, 绑定了6379默认端口的服务器
+   redis-cli -p 端口号
+   redis-cli -h IP地址 -p 端口 # 连接远程主机的指定端口的redis
+   # 通过客户端关闭服务器
+   shutdown
+   # 客户端的测试命令
+   ping [MSG]
+   ```
+
+4. redis中数据的组织格式
+
+   - 键值对
+     - key: 必须是字符串 - "hello"
+     - value: 可选的
+       - String类型
+       - List类型
+       - Set类型
+       - SortedSet类型
+       - Hash类型
+
+5. redis中常用数据类型
+
+   - String类型
+     - 字符串
+   - List类型
+     - 存储多个string字符串的
+   - Set类型
+     - 集合
+       - stl集合
+         - 默认是排序的, 元素不重复
+       - redis集合
+         - 元素不重复, 数据是无序的
+   - SortedSet类型
+     - 排序集合, 集合中的每个元素分为两部分
+       - [分数, 成员] -> [66, ''tom'']
+   - Hash类型
+     - 跟map数据组织方式一样: key:value
+       - Qt -> QHash, QMap
+       - Map -> 红黑树
+       - hash -> 数组
+         - a[index] = xx
+
+### 1.2 redis常用命令
+
+- String类型
+
+  ```shell
+  key -> string
+  value -> string
+  # 设置一个键值对->string:string
+  SET key value
+  
+  # 通过key得到value
+  GET key
+  
+  # 同时设置一个或多个 key-value 对
+  MSET key value [key value ...]
+  
+  # 同时查看过个key
+  MGET key [key ...]
+  
+  # 如果 key 已经存在并且是一个字符串， APPEND 命令将 value 追加到 key 原来的值的末尾
+  # key: hello, value: world, append: 12345
+  APPEND key value
+  
+  # 返回 key 所储存的字符串值的长度
+  STRLEN key
+  
+  # 将 key 中储存的数字值减一。
+  # 前提, value必须是数字字符串 -"12345"
+  DECR key
+  ```
+
+- List类型 - 存储多个字符串
+
+  ```shell
+  key -> string
+  value -> list
+  # 将一个或多个值 value 插入到列表 key 的表头
+  LPUSH key value [value ...]
+  # 将一个或多个值 value 插入到列表 key 的表尾 (最右边)。
+  RPUSH key value [value ...]
+  # list中删除元素
+  LPOP key # 删除最左侧元素
+  RPOP key # 删除最右侧元素
+  # 遍历
+  LRANGE key start stop
+  	start: 起始位置, 0
+  	stop: 结束位置, -1
+  # 通过下标得到对应位置的字符串
+  LINDEX key index
+  # list中字符串的个数
+  LLEN key
+  ```
+
+- Set类型
+
+  ```shell
+  key -> string
+  value -> set类型 ("string", "string1")
+  # 添加元素
+  # 将一个或多个 member 元素加入到集合 key 当中，已经存在于集合的 member 元素将被忽略
+  SADD key member [member ...]
+  
+  # 遍历
+  SMEMBERS key
+  
+  # 判断是否成员
+  SISMEMBER key
+  
+  # 差集
+  SDIFF key [key ...]
+  
+  # 交集
+  SINTER key [key ...]
+  
+  # 并集
+  SUNION key [key ...]
+  ```
+
+- ZSet 类型
+
+  ```shell
+  key -> string
+  value -> sorted ([socre, member], [socre, member], ...)
+  # 添加元素
+  ZADD key score member [[score member] [score member] ...]
+  
+  # 遍历
+  ZRANGE key start stop [WITHSCORES] # -> 升序集合
+  ZREVRANGE key start stop [WITHSCORES] # -> 降序集合
+  
+  # 指定分数区间内元素的个数
+  ZCOUNT key min max
+  ```
+
+- Hash类型
+
+  ![](E:\typroa_pic\2.png)
+
+  ```shell
+  key ->string
+  value -> hash ([key:value], [key:value], [key:value], ...)
+  # 添加数据
+  HSET key field value
+  
+  # 取数据
+  HGET key field
+  
+  # 批量插入键值对
+  HMSET key field value [field value ...]
+  
+  # 批量取数据
+  HMGET key field [field ...]
+  
+  # 删除键值对
+  HDEL key field [field ...]
+  ```
+
+- Key 相关的命令
+
+  ```shell
+  # 删除键值对
+  DEL key [key ...]
+  
+  # 查看key值
+  KEYS pattern
+  查找所有符合给定模式 pattern 的 key 。
+  KEYS * 匹配数据库中所有 key 。
+  KEYS h?llo 匹配 hello ， hallo 和 hxllo 等。
+  KEYS h*llo 匹配 hllo 和 heeeeello 等。
+  KEYS h[ae]llo 匹配 hello 和 hallo ，但不匹配 hillo
+  
+  # 给key设置生存时长
+  EXPIRE key seconds
+  
+  # 取消生存时长
+  PERSIST key
+  
+  # key对应的valued类型
+  TYPE key
+  ```
+
+
+### 1.3 redis配置文件
+
+> 配置文件是给**redis服务器**使用 的
+
+1. 配置文件位置
+
+   - 从源码安装目录中找 -> redis.conf
+
+2. 配置文件配置项
+
+   ```shell
+   # redis服务器绑定谁之后, 谁就能访问redis服务器
+   # 任何客户端都能访问服务器, 需要注释该选项
+   bind 127.0.0.1 192.168.1.100 
+   
+   # 保护模式, 如果要远程客户端访问服务器, 该模式要关闭
+   protected-mode yes
+   
+   # reids服务器启动时候绑定的端口, 默认为6379 
+   port 6379
+   
+   # 超时时长, 0位关闭该选项, >0则开启
+   timeout 0
+   
+   # 服务器启动之后不是守护进程
+   daemonize no
+   # 如果服务器是守护进程, 就会生成一个pid文件
+   # ./ -> reids服务器启动时候对应的目录
+   pidfile ./redis.pid
+   
+   # 日志级别
+    loglevel notice
+    
+   # 如果服务器是守护进程, 才会写日志文件
+    logfile "" -> 这是没写
+    logfile ./redis.log
+    
+    # redis中数据库的个数
+    databases 16 
+    	- 切换 select dbID [dbID == 0 ~ 16-1]
+   ```
+
+### 1.4 redis数据持久化
+
+> 持久化: 数据从内存到磁盘的过程
+
+持久化的两种方式:
+
+- rdb方式
+  - 这是一种默认的持久化方式, 默认打开
+  - 磁盘的持久化文件xxx.rdb
+  - 将内存数据以二进制的方式直接写入磁盘文件
+  - 文件比较小, 恢复时间短, 效率高
+  - 以用户设定的频率 -> 容易丢失数据
+  - 数据完整性相对较低
+- aof方式
+  - 默认是关闭的
+  - 磁盘的持久化文件xxx.aof
+  - 直接将生成数据的命令写入磁盘文件
+  - 文件比较大, 恢复时间长, 效率低
+  - 以某种频率 -> 1sec
+  - 数据完整性高
+
+```shell
+# rdb的同步频率, 任意一个满足都可以
+save 900 1
+save 300 10
+save 60 10000
+
+# rdb文件的名字
+dbfilename dump.rdb
+
+# 生成的持久化文件保存的那个目录下, rdb和aof
+dir ./ 
+
+# 是不是要打开aof模式
+appendonly no
+ -> 打开: yes
+ 
+# 设置aof文件的名字
+appendfilename "appendonly.aof"
+
+# aof更新的频率
+# appendfsync always
+appendfsync everysec
+# appendfsync no
+```
+
+1. aof和rdb能不能同时打开?
+
+   - 可以
+
+2. aof和rdb能不能同时关闭?
+
+   - 可以
+
+   - rdb如何关闭?
+
+     ```shell
+     save ""
+     ```
+
+3. 两种模式同时开启, 如果要进行数据恢复, 如何选择?
+
+   - 效率上考虑:  rdb模式
+   - 数据的完整性: aof模式
+
+### 1.5 go连接redis
+
+可以使用redigo或者go-redis等多种第三方开源库，详情看文档，基础使用样例：
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/garyburd/redigo/redis"
+)
+
+// 创建 redis 客户端
+func createClient()  {
+
+}
+
+func main(){
+	//通过go向redis写入和读取数据
+	//1.连接到redis
+	conn,err:=redis.Dial("tcp","127.0.0.1:6379")
+	if err!=nil{
+		fmt.Println("redis.Dial err",err)
+		return
+	}
+	defer conn.Close() //关闭连接
+	//通过go向redis写入数据
+	_,err =conn.Do("set","Age","18")
+	if err!=nil{
+		fmt.Println("set.Do err",err)
+		return
+	}
+
+	//通过go向redis获取数据
+	r,err :=redis.Strings(conn.Do("keys","*"))
+	if err!=nil{
+		fmt.Println("get.Do err",err)
+		return
+	}
+
+	//因为返回r是空接口intreface{}，所以要转成对应类型
+
+	fmt.Println("redis operate success",r)
+
+}
+```
+
+
+
+### 1.6 redis连接池
+
+1) 事先初始化一定数量的连接，放入到连接池
+
+2) 当 Go 需要操作 Redis 时，直接从 **Redis** 链接池取出链接即可。
+
+3) 这样可以节省临时获取 **Redis** 链接的时间，从而提高效率.
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/garyburd/redigo/redis"
+)
+//定义一个全局的 pool
+var pool *redis.Pool
+//当启动程序时，就初始化连接池
+func init() {//init()函数在main函数之前执行
+	pool = &redis.Pool{ //返回的是一个结构体，所以返回引用
+		MaxIdle: 8, //最大空闲链接数
+		MaxActive: 0, // 表示和数据库的最大链接数， 0 表示没有限制
+		IdleTimeout: 100, // 最大空闲时间
+		Dial: func() (redis.Conn, error){ // 初始化链接的代码， 链接哪个 ip 的 redis
+			return redis.Dial("tcp", "localhost:6379")
+		},
+	}
+}
+func main() {
+	//先从 pool 取出一个链接
+	conn := pool.Get()
+	defer conn.Close()
+	_, err := conn.Do("Set", "name", "汤姆猫~~")
+	if err != nil {
+		fmt.Println("conn.Do err=", err)
+		return
+	}
+	//取出
+	r, err := redis.String(conn.Do("Get", "name"))
+	if err != nil {
+		fmt.Println("conn.Do err=", err)
+		return
+	}
+	fmt.Println("r=", r)
+	//如果我们要从 pool 取出链接，一定保证链接池是没有关闭
+	//pool.Close()
+	conn2 := pool.Get()
+	_, err = conn2.Do("Set", "name2", "汤姆猫~~2")
+	if err != nil {
+		fmt.Println("conn.Do err~~~~=", err)
+		return
+	}
+	//取出
+	r2, err := redis.String(conn2.Do("Get", "name2"))
+	if err != nil {
+		fmt.Println("conn.Do err=", err)
+		return
+	}
+	fmt.Println("r=", r2)
+	//fmt.Println("conn2=", conn2)
+}
+```
+
+## 2.MySQL
+
+​		go为关系型数据库提供了一套sql标准——`database/sql`，所有数据库的使用方法都是相同的，只需要引入不同的驱动即可；
+
+​		Open函数可能只是验证其参数格式是否正确，实际上并不创建与数据库的连接。如果要检查数据源的名称是否真实有效，应该调用Ping方法。
+
+​		**返回的DB对象可以安全地被多个goroutine并发使用，并且维护其自己的空闲连接池**。因此，Open函数应该仅被调用一次，很少需要关闭这个DB对象。
+
+```go
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	_"github.com/go-sql-driver/mysql"
+)
+//Go连接Mysql示例
+
+func main(){
+	//连接数据库
+	dsn:="user:dbpasswd@tcp(127.0.0.1:3306)/dbname"
+	db, err := sql.Open("mysql", dsn)//不会校验用户名和密码是否正确，只会校验格式是否正确
+	if err != nil {//格式不正确时报错
+		fmt.Printf("dsn value %s err,err:%v\n",dsn,err)
+		return
+	}
+	//尝试建立连接（校验dsn是否正确）
+	err = db.Ping()
+	if err != nil {
+		fmt.Printf("open %s faild,err:%v\n",dsn,err)
+	}
+
+	fmt.Println("连接数据库成功！")
+	defer db.Close()  // 注意这行代码要写在上面err判断的下面
+}
+```
+
+### SetMaxOpenConns
+
+```go
+func (db *DB) SetMaxOpenConns(n int)
+```
+
+`SetMaxOpenConns`设置与数据库建立连接的最大数目。 如果n大于0且小于最大闲置连接数，会将最大闲置连接数减小到匹配最大开启连接数的限制。 如果n<=0，不会限制最大开启连接数，默认为0（无限制）。
+
+### SetMaxIdleConns
+
+```go
+func (db *DB) SetMaxIdleConns(n int)
+```
+
+SetMaxIdleConns设置连接池中的最大闲置连接数。 如果n大于最大开启连接数，则新的最大闲置连接数会减小到匹配最大开启连接数的限制。 如果n<=0，不会保留闲置连接。
+
+### 查询
+
+为了方便查询，我们事先定义好一个结构体来存储user表的数据。
+
+```go
+type user struct {
+	id   int
+	age  int
+	name string
+}
+```
+
+#### 单行查询
+
+单行查询`db.QueryRow()`执行一次查询，并期望返回最多一行结果（即Row）。QueryRow总是返回非nil的值，直到返回值的Scan方法被调用时，才会返回被延迟的错误。（如：未找到结果）
+
+```go
+func (db *DB) QueryRow(query string, args ...interface{}) *Row
+```
+
+具体示例代码：
+
+```go
+// 查询单条数据示例
+func queryRowDemo() {
+	sqlStr := "select id, name, age from user where id=?"
+	var u user
+	// 非常重要：确保QueryRow之后调用Scan方法，否则持有的数据库链接不会被释放
+	err := db.QueryRow(sqlStr, 1).Scan(&u.id, &u.name, &u.age)//调用Scan接收返回的值，且其中有释放连接的方法，所以必须调用
+	if err != nil {
+		fmt.Printf("scan failed, err:%v\n", err)
+		return
+	}
+	fmt.Printf("id:%d name:%s age:%d\n", u.id, u.name, u.age)
+}
+```
+
+#### 多行查询
+
+多行查询`db.Query()`执行一次查询，返回多行结果（即Rows），一般用于执行select命令。参数args表示query中的占位参数。
+
+```go
+func (db *DB) Query(query string, args ...interface{}) (*Rows, error)
+```
+
+具体示例代码：
+
+```go
+// 查询多条数据示例
+func queryMultiRowDemo() {
+	sqlStr := "select id, name, age from user where id > ?"
+	rows, err := db.Query(sqlStr, 0)
+	if err != nil {
+		fmt.Printf("query failed, err:%v\n", err)
+		return
+	}
+	// 非常重要：关闭rows释放持有的数据库链接
+	defer rows.Close()
+
+	// 循环读取结果集中的数据
+	for rows.Next() {
+		var u user
+		err := rows.Scan(&u.id, &u.name, &u.age)
+		if err != nil {
+			fmt.Printf("scan failed, err:%v\n", err)
+			return
+		}
+		fmt.Printf("id:%d name:%s age:%d\n", u.id, u.name, u.age)
+	}
+}
+```
+
+
+
+### 插入数据
+
+插入、更新和删除操作都使用`Exec`方法。
+
+```go
+func (db *DB) Exec(query string, args ...interface{}) (Result, error)
+```
+
+Exec执行一次命令（包括查询、删除、更新、插入等），返回的Result是对已执行的SQL命令的总结。参数args表示query中的占位参数。
+
+具体插入数据示例代码如下：
+
+```go
+// 插入数据
+func insertRowDemo() {
+	sqlStr := "insert into user(name, age) values (?,?)"
+	ret, err := db.Exec(sqlStr, "王五", 38)
+	if err != nil {
+		fmt.Printf("insert failed, err:%v\n", err)
+		return
+	}
+	theID, err := ret.LastInsertId() // 新插入数据的id
+	if err != nil {
+		fmt.Printf("get lastinsert ID failed, err:%v\n", err)
+		return
+	}
+	fmt.Printf("insert success, the id is %d.\n", theID)
+}
+```
+
+### 更新数据
+
+具体更新数据示例代码如下：
+
+```go
+// 更新数据
+func updateRowDemo() {
+	sqlStr := "update user set age=? where id = ?"
+	ret, err := db.Exec(sqlStr, 39, 3)
+	if err != nil {
+		fmt.Printf("update failed, err:%v\n", err)
+		return
+	}
+	n, err := ret.RowsAffected() // 操作影响的行数
+	if err != nil {
+		fmt.Printf("get RowsAffected failed, err:%v\n", err)
+		return
+	}
+	fmt.Printf("update success, affected rows:%d\n", n)
+}
+```
+
+### 删除数据
+
+具体删除数据的示例代码如下：
+
+```go
+// 删除数据
+func deleteRowDemo() {
+	sqlStr := "delete from user where id = ?"
+	ret, err := db.Exec(sqlStr, 3)
+	if err != nil {
+		fmt.Printf("delete failed, err:%v\n", err)
+		return
+	}
+	n, err := ret.RowsAffected() // 操作影响的行数
+	if err != nil {
+		fmt.Printf("get RowsAffected failed, err:%v\n", err)
+		return
+	}
+	fmt.Printf("delete success, affected rows:%d\n", n)
+}
+```
+
+### 什么是预处理？
+
+普通SQL语句执行过程：
+
+1. 客户端对SQL语句进行占位符替换得到完整的SQL语句。
+2. 客户端发送完整SQL语句到MySQL服务端
+3. MySQL服务端执行完整的SQL语句并将结果返回给客户端。
+
+预处理执行过程：
+
+1. 把SQL语句分成两部分，命令部分与数据部分。
+2. 先把命令部分发送给MySQL服务端，MySQL服务端进行SQL预处理。
+3. 然后把数据部分发送给MySQL服务端，MySQL服务端对SQL语句进行占位符替换。
+4. MySQL服务端执行完整的SQL语句并将结果返回给客户端。
+
+### 为什么要预处理？
+
+1. 优化MySQL服务器重复执行SQL的方法，可以提升服务器性能，提前让服务器编译，一次编译多次执行，节省后续编译的成本。
+2. 避免SQL注入问题。
+
+### Go实现MySQL预处理
+
+`database/sql`中使用下面的`Prepare`方法来实现预处理操作。
+
+```go
+func (db *DB) Prepare(query string) (*Stmt, error)
+```
+
+`Prepare`方法会先将sql语句发送给MySQL服务端，返回一个准备好的状态用于之后的查询和命令。返回值可以同时执行多个查询和命令。
+
+查询操作的预处理示例代码如下：
+
+```go
+// 预处理查询示例
+func prepareQueryDemo() {
+	sqlStr := "select id, name, age from user where id > ?"
+	stmt, err := db.Prepare(sqlStr)
+	if err != nil {
+		fmt.Printf("prepare failed, err:%v\n", err)
+		return
+	}
+	defer stmt.Close()
+	rows, err := stmt.Query(0)
+	if err != nil {
+		fmt.Printf("query failed, err:%v\n", err)
+		return
+	}
+	defer rows.Close()
+	// 循环读取结果集中的数据
+	for rows.Next() {
+		var u user
+		err := rows.Scan(&u.id, &u.name, &u.age)
+		if err != nil {
+			fmt.Printf("scan failed, err:%v\n", err)
+			return
+		}
+		fmt.Printf("id:%d name:%s age:%d\n", u.id, u.name, u.age)
+	}
+}
+```
+
+插入、更新和删除操作的预处理十分类似，这里以插入操作的预处理为例：
+
+```go
+// 预处理插入示例
+func prepareInsertDemo() {
+	sqlStr := "insert into user(name, age) values (?,?)"
+	stmt, err := db.Prepare(sqlStr)
+	if err != nil {
+		fmt.Printf("prepare failed, err:%v\n", err)
+		return
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec("小王子", 18)
+	if err != nil {
+		fmt.Printf("insert failed, err:%v\n", err)
+		return
+	}
+	_, err = stmt.Exec("沙河娜扎", 18)
+	if err != nil {
+		fmt.Printf("insert failed, err:%v\n", err)
+		return
+	}
+	fmt.Println("insert success.")
+}
+```
+
+### SQL注入问题
+
+**任何时候都不应该自己拼接SQL语句！**
+
+这里演示一个自行拼接SQL语句的示例，编写一个根据name字段查询user表的函数如下：
+
+```go
+// sql注入示例
+func sqlInjectDemo(name string) {
+	sqlStr := fmt.Sprintf("select id, name, age from user where name='%s'", name)//用户自己拼接SQL语句
+	fmt.Printf("SQL:%s\n", sqlStr)
+	var u user
+	err := db.QueryRow(sqlStr).Scan(&u.id, &u.name, &u.age)
+	if err != nil {
+		fmt.Printf("exec failed, err:%v\n", err)
+		return
+	}
+	fmt.Printf("user:%#v\n", u)
+}
+```
+
+此时以下输入字符串都可以引发SQL注入问题：
+
+```go
+sqlInjectDemo("xxx' or 1=1#")
+sqlInjectDemo("xxx' union select * from user #")
+sqlInjectDemo("xxx' and (select count(*) from user) <10 #")
+```
+
+**补充：**不同的数据库中，SQL语句使用的占位符语法不尽相同。
+
+|   数据库   |  占位符语法  |
+| :--------: | :----------: |
+|   MySQL    |     `?`      |
+| PostgreSQL | `$1`, `$2`等 |
+|   SQLite   |  `?` 和`$1`  |
+|   Oracle   |   `:name`    |
+
+### 什么是事务？
+
+事务：一个最小的不可再分的工作单元；通常一个事务对应一个完整的业务(例如银行账户转账业务，该业务就是一个最小的工作单元)，同时这个完整的业务需要执行多次的DML(insert、update、delete)语句共同联合完成。A转账给B，这里面就需要执行两次update操作。
+
+在MySQL中只有使用了`Innodb`数据库引擎的数据库或表才支持事务。事务处理可以用来维护数据库的完整性，保证成批的SQL语句要么全部执行，要么全部不执行。
+
+### 事务的ACID
+
+通常事务必须满足4个条件（ACID）：原子性（Atomicity，或称不可分割性）、一致性（Consistency）、隔离性（Isolation，又称独立性）、持久性（Durability）。
+
+|  条件  |                             解释                             |
+| :----: | :----------------------------------------------------------: |
+| 原子性 | 一个事务（transaction）中的所有操作，要么全部完成，要么全部不完成，不会结束在中间某个环节。事务在执行过程中发生错误，会被回滚（Rollback）到事务开始前的状态，就像这个事务从来没有执行过一样。 |
+| 一致性 | 在事务开始之前和事务结束以后，数据库的完整性没有被破坏。这表示写入的资料必须完全符合所有的预设规则，这包含资料的精确度、串联性以及后续数据库可以自发性地完成预定的工作。 |
+| 隔离性 | 数据库允许多个并发事务同时对其数据进行读写和修改的能力，隔离性可以防止多个事务并发执行时由于交叉执行而导致数据的不一致。事务隔离分为不同级别，包括读未提交（Read uncommitted）、读提交（read committed）、可重复读（repeatable read）和串行化（Serializable）。 |
+| 持久性 | 事务处理结束后，对数据的修改就是永久的，即便系统故障也不会丢失。 |
+
+### 事务相关方法
+
+Go语言中使用以下三个方法实现MySQL中的事务操作。 
+
+开始事务
+
+```go
+func (db *DB) Begin() (*Tx, error)
+```
+
+提交事务
+
+```go
+func (tx *Tx) Commit() error
+```
+
+回滚事务
+
+```go
+func (tx *Tx) Rollback() error
+```
+
+### 事务示例
+
+下面的代码演示了一个简单的事务操作，该事物操作能够确保两次更新操作要么同时成功要么同时失败，不会存在中间状态。
+
+```go
+// 事务操作示例
+func transactionDemo() {
+	tx, err := db.Begin() // 开启事务
+	if err != nil {
+		if tx != nil {
+			tx.Rollback() // 回滚
+		}
+		fmt.Printf("begin trans failed, err:%v\n", err)
+		return
+	}
+	sqlStr1 := "Update user set age=30 where id=?"
+	ret1, err := tx.Exec(sqlStr1, 2)
+	if err != nil {
+		tx.Rollback() // 回滚
+		fmt.Printf("exec sql1 failed, err:%v\n", err)
+		return
+	}
+	affRow1, err := ret1.RowsAffected()
+	if err != nil {
+		tx.Rollback() // 回滚
+		fmt.Printf("exec ret1.RowsAffected() failed, err:%v\n", err)
+		return
+	}
+
+	sqlStr2 := "Update user set age=40 where id=?"
+	ret2, err := tx.Exec(sqlStr2, 3)
+	if err != nil {
+		tx.Rollback() // 回滚
+		fmt.Printf("exec sql2 failed, err:%v\n", err)
+		return
+	}
+	affRow2, err := ret2.RowsAffected()
+	if err != nil {
+		tx.Rollback() // 回滚
+		fmt.Printf("exec ret1.RowsAffected() failed, err:%v\n", err)
+		return
+	}
+
+	fmt.Println(affRow1, affRow2)
+	if affRow1 == 1 && affRow2 == 1 {
+		fmt.Println("事务提交啦...")
+		tx.Commit() // 提交事务
+	} else {
+		tx.Rollback()
+		fmt.Println("事务回滚啦...")
+	}
+
+	fmt.Println("exec trans success!")
+}
+```
+
+
+
+# 第十五章、第三方库
+
+## 1. sync/atomic库
+
+​	原子操作，线程安全，比互斥锁性能高
+
+## 2.性能测试
+
+耗时性能测试基本格式:
+
+```go
+func BenchmarkName(b *testing.B){
+    // ...
+}
+```
+
+基准测试并不会默认执行，需要增加`-bench`参数，所以我们通过执行`go test -bench=Split`命令执行基准测试
+
+## 3.性能优化
+
+### CPU性能分析
+
+开启CPU性能分析：
+
+```go
+pprof.StartCPUProfile(w io.Writer)
+```
+
+停止CPU性能分析：
+
+```go
+pprof.StopCPUProfile()
+```
+
+应用执行结束后，就会生成一个文件，保存了我们的 CPU profiling 数据。得到采样数据之后，使用`go tool pprof`工具进行CPU性能分析。
+
+### 内存性能优化
+
+记录程序的堆栈信息
+
+```go
+pprof.WriteHeapProfile(w io.Writer)
+```
+
+得到采样数据之后，使用`go tool pprof`工具进行内存性能分析。
+
+`go tool pprof`默认是使用`-inuse_space`进行统计，还可以使用`-inuse-objects`查看分配对象的数量。
+
+# 第十六章、go-http编程
+
+## 1. http_sever
+
+**调用net/http包**
+
+```go
+package main
+
+import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
+)
+
+func f1(w http.ResponseWriter,r *http.Request){
+	str,err:=ioutil.ReadFile("./web.html")
+	if err!=nil{
+		w.Write([]byte(fmt.Sprintf("%v",err)))
+	}
+	w.Write(str)
+}
+
+func main(){
+	http.HandleFunc("/posts/Go/",f1)
+	http.ListenAndServe("127.0.0.1:9090",nil)
+}
+```
+
+## 2. http_client
+
+### get请求示例
+
+```go
+package main
+
+import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
+)
+
+func main()  {
+	resp,err:=http.Get("http://127.0.0.1:9090/Go/?name=sb&age=18")
+	if err!=nil{
+		fmt.Println("Get err:",err)
+		return
+	}
+	defer resp.Body.Close()
+	//把resp中服务端返回的数据读出来
+	b,err:=ioutil.ReadAll(resp.Body)//读出服务端响应的内容
+	if err!=nil{
+		fmt.Printf("read resp.body ,err %v\n",err)
+		return
+	}
+	fmt.Println(string(b))
+}
+```
+
+2.post请求示例
+
+### Post请求示例
+
+发送`POST`请求的示例代码如下：
+
+```go
+package main
+
+import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
+)
+
+// net/http post demo
+
+func main() {
+	url := "http://127.0.0.1:9090/post"
+	// 表单数据
+	//contentType := "application/x-www-form-urlencoded"
+	//data := "name=小王子&age=18"
+	// json
+	contentType := "application/json"
+	data := `{"name":"小王子","age":18}`
+	resp, err := http.Post(url, contentType, strings.NewReader(data))
+	if err != nil {
+		fmt.Printf("post failed, err:%v\n", err)
+		return
+	}
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("get resp failed, err:%v\n", err)
+		return
+	}
+	fmt.Println(string(b))
+}
+```
+
+对应的Server端HandlerFunc如下：
+
+```go
+func postHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	// 1. 请求类型是application/x-www-form-urlencoded时解析form数据
+	r.ParseForm()
+	fmt.Println(r.PostForm) // 打印form数据
+	fmt.Println(r.PostForm.Get("name"), r.PostForm.Get("age"))
+	// 2. 请求类型是application/json时从r.Body读取数据
+	b, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Printf("read request.Body failed, err:%v\n", err)
+		return
+	}
+	fmt.Println(string(b))
+	answer := `{"status": "ok"}`
+	w.Write([]byte(answer))
+}
+```
+
+# 第十七章、消息队列
+
+**同步变异步**
+
+**进程间通信**
+
+## 1.NSQ
+
+nsqd是一个守护进程，它接收、排队并向客户端发送消息。
+
+启动`nsqd`，指定`-broadcast-address=127.0.0.1`来配置广播地址
+
+```go
+./nsqd -broadcast-address=127.0.0.1
+```
+
+如果是在搭配`nsqlookupd`使用的模式下需要还指定`nsqlookupd`地址:
+
+```bash
+./nsqd -broadcast-address=127.0.0.1 -lookupd-tcp-address=127.0.0.1:4160
+```
+
+如果是部署了多个`nsqlookupd`节点的集群，那还可以指定多个`-lookupd-tcp-address`
+
+### 1.1 go操作NSQ
+
+#### 安装
+
+```bash
+go get -u github.com/nsqio/go-nsq
+```
+
+#### 生产者
+
+一个简单的生产者示例代码如下：
+
+```go
+// nsq_producer/main.go
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/nsqio/go-nsq"
+)
+
+// NSQ Producer Demo
+
+var producer *nsq.Producer
+
+// 初始化生产者
+func initProducer(str string) (err error) {
+	config := nsq.NewConfig()
+	producer, err = nsq.NewProducer(str, config)
+	if err != nil {
+		fmt.Printf("create producer failed, err:%v\n", err)
+		return err
+	}
+	return nil
+}
+
+func main() {
+	nsqAddress := "127.0.0.1:4150"
+	err := initProducer(nsqAddress)
+	if err != nil {
+		fmt.Printf("init producer failed, err:%v\n", err)
+		return
+	}
+
+	reader := bufio.NewReader(os.Stdin) // 从标准输入读取
+	for {
+		data, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Printf("read string from stdin failed, err:%v\n", err)
+			continue
+		}
+		data = strings.TrimSpace(data)
+		if strings.ToUpper(data) == "Q" { // 输入Q退出
+			break
+		}
+		// 向 'topic_demo' publish 数据
+		err = producer.Publish("topic_demo", []byte(data))
+		if err != nil {
+			fmt.Printf("publish msg to nsq failed, err:%v\n", err)
+			continue
+		}
+	}
+}
+```
+
+#### 消费者
+
+一个简单的消费者示例代码如下：
+
+```go
+// nsq_consumer/main.go
+package main
+
+import (
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/nsqio/go-nsq"
+)
+
+// NSQ Consumer Demo
+
+// MyHandler 是一个消费者类型
+type MyHandler struct {
+	Title string
+}
+
+// HandleMessage 是需要实现的处理消息的方法
+func (m *MyHandler) HandleMessage(msg *nsq.Message) (err error) {
+	fmt.Printf("%s recv from %v, msg:%v\n", m.Title, msg.NSQDAddress, string(msg.Body))
+	return
+}
+
+// 初始化消费者
+func initConsumer(topic string, channel string, address string) (err error) {
+	config := nsq.NewConfig()
+	config.LookupdPollInterval = 15 * time.Second
+	c, err := nsq.NewConsumer(topic, channel, config)
+	if err != nil {
+		fmt.Printf("create consumer failed, err:%v\n", err)
+		return
+	}
+	consumer := &MyHandler{
+		Title: "沙河1号",
+	}
+	c.AddHandler(consumer)
+
+	// if err := c.ConnectToNSQD(address); err != nil { // 直接连NSQD
+	if err := c.ConnectToNSQLookupd(address); err != nil { // 通过lookupd查询
+		return err
+	}
+	return nil
+
+}
+
+func main() {
+	err := initConsumer("topic_demo", "first", "127.0.0.1:4161")
+	if err != nil {
+		fmt.Printf("init consumer failed, err:%v\n", err)
+		return
+	}
+	c := make(chan os.Signal)        // 定义一个信号的通道
+	signal.Notify(c, syscall.SIGINT) // 转发键盘中断信号到c
+	<-c                              // 阻塞
+}
+```
+
+**点对点模式、发布/订阅（topic）模式、kafka**
+
+
+
+# 第十八章、依赖管理go mode
+
+`go module`是Go1.11版本之后官方推出的版本管理工具，并且从Go1.13版本开始，`go module`将是Go语言默认的依赖管理工具。
+
+### GO1.11MODULE
+
+要启用`go module`支持首先要设置环境变量`GO111MODULE`，通过它可以开启或关闭模块支持，它有三个可选值：`off`、`on`、`auto`，默认值是`auto`。
+
+1. `GO111MODULE=off`禁用模块支持，编译时会从`GOPATH`和`vendor`文件夹中查找包。
+2. `GO111MODULE=on`启用模块支持，编译时会忽略`GOPATH`和`vendor`文件夹，只根据 `go.mod`下载依赖。
+3. `GO111MODULE=auto`，当项目在`$GOPATH/src`外且项目根目录有`go.mod`文件时，开启模块支持。
+
+简单来说，设置`GO111MODULE=on`之后就可以使用`go module`了，以后就没有必要在GOPATH中创建项目了，并且还能够很好的管理项目依赖的第三方包信息。
+
+使用 go module 管理依赖后会在项目根目录下生成两个文件`go.mod`和`go.sum`。
+
+### GOPROXY
+
+Go1.11之后设置GOPROXY命令为：
+
+```bash
+set GOPROXY=https://goproxy.cn
+```
+
+Go1.13之后`GOPROXY`默认值为`https://proxy.golang.org`，在国内是无法访问的，所以十分建议大家设置GOPROXY，这里我推荐使用[goproxy.cn](https://studygolang.com/topics/10014)。
+
+```bash
+go env -w GOPROXY=https://goproxy.cn,direct
+```
+
+### go mod命令
+
+常用的`go mod`命令如下：
+
+```go
+go mod download    下载依赖的module到本地cache（默认为$GOPATH/pkg/mod目录）
+go mod edit        编辑go.mod文件
+go mod graph       打印模块依赖图
+go mod init        初始化当前文件夹, 创建go.mod文件
+go mod tidy        增加缺少的module，删除无用的module
+go mod vendor      将依赖复制到vendor下
+go mod verify      校验依赖
+go mod why         解释为什么需要依赖
+```
+
+### go.mod
+
+go.mod文件记录了项目所有的依赖信息，其结构大致如下：
+
+```sh
+module github.com/Q1mi/studygo/blogger
+
+go 1.12
+
+require (
+	github.com/DeanThompson/ginpprof v0.0.0-20190408063150-3be636683586
+	github.com/gin-gonic/gin v1.4.0
+	github.com/go-sql-driver/mysql v1.4.1
+	github.com/jmoiron/sqlx v1.2.0
+	github.com/satori/go.uuid v1.2.0
+	google.golang.org/appengine v1.6.1 // indirect
+)
+```
+
+其中，
+
+- `module`用来定义包名
+- `require`用来定义依赖包及版本
+- `indirect`表示间接引用
+
+#### 依赖的版本
+
+go mod支持语义化版本号，比如`go get foo@v1.2.3`，也可以跟git的分支或tag，比如`go get foo@master`，当然也可以跟git提交哈希，比如`go get foo@e3702bed2`。关于依赖的版本支持以下几种格式：
+
+```go
+gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
+gopkg.in/vmihailenco/msgpack.v2 v2.9.1
+gopkg.in/yaml.v2 <=v2.2.1
+github.com/tatsushid/go-fastping v0.0.0-20160109021039-d7bb493dee3e
+latest
+```
+
+#### replace
+
+在国内访问golang.org/x的各个包都需要翻墙，你可以在go.mod中使用replace替换成github上对应的库。
+
+```go
+replace (
+	golang.org/x/crypto v0.0.0-20180820150726-614d502a4dac => github.com/golang/crypto v0.0.0-20180820150726-614d502a4dac
+	golang.org/x/net v0.0.0-20180821023952-922f4815f713 => github.com/golang/net v0.0.0-20180826012351-8a410e7b638d
+	golang.org/x/text v0.3.0 => github.com/golang/text v0.3.0
+)
+```
+
+### go get
+
+在项目中执行`go get`命令可以下载依赖包，并且还可以指定下载的版本。
+
+1. 运行`go get -u`将会升级到最新的次要版本或者修订版本(x.y.z, z是修订版本号， y是次要版本号)
+2. 运行`go get -u=patch`将会升级到最新的修订版本
+3. 运行`go get package@version`将会升级到指定的版本号version
+
+如果下载所有依赖可以使用`go mod download`命令。
+
+### 整理依赖
+
+我们在代码中删除依赖代码后，相关的依赖库并不会在`go.mod`文件中自动移除。这种情况下我们可以使用`go mod tidy`命令更新`go.mod`中的依赖关系。
+
+### go mod edit
+
+#### 格式化
+
+因为我们可以手动修改go.mod文件，所以有些时候需要格式化该文件。Go提供了一下命令：
+
+```bash
+go mod edit -fmt
+```
+
+#### 添加依赖项
+
+```bash
+go mod edit -require=golang.org/x/text
+```
+
+#### 移除依赖项
+
+如果只是想修改`go.mod`文件中的内容，那么可以运行`go mod edit -droprequire=package path`，比如要在`go.mod`中移除`golang.org/x/text`包，可以使用如下命令：
+
+```bash
+go mod edit -droprequire=golang.org/x/text
+```
+
+关于`go mod edit`的更多用法可以通过`go help mod edit`查看。
+
+# 第十九章、contex--goroutine管理
+
+## Context初识
+
+​	Go1.7加入了一个新的标准库`context`，它定义了`Context`类型，专门用来简化 对于处理单个请求的多个 goroutine 之间与请求域的数据、取消信号、截止时间等相关操作，这些操作可能涉及多个 API 调用。
+
+​	对服务器传入的请求应该创建上下文，而对服务器的传出调用应该接受上下文。它们之间的函数调用链必须传递上下文，或者可以使用`WithCancel`、`WithDeadline`、`WithTimeout`或`WithValue`创建的派生上下文。当一个上下文被取消时，它派生的所有上下文也被取消。
+
+## Context接口
+
+`context.Context`是一个接口，该接口定义了四个需要实现的方法。具体签名如下：
+
+```go
+type Context interface {
+    Deadline() (deadline time.Time, ok bool)
+    Done() <-chan struct{}
+    Err() error
+    Value(key interface{}) interface{}
+}
+```
+
+其中：
+
+- `Deadline`方法需要返回当前`Context`被取消的时间，也就是完成工作的截止时间（deadline）；
+
+- `Done`方法需要返回一个`Channel`，这个Channel会在当前工作完成或者上下文被取消之后关闭，多次调用`Done`方法会返回同一个Channel；
+
+- ```
+  Err
+  ```
+
+  方法会返回当前
+
+  ```
+  Context
+  ```
+
+  结束的原因，它只会在
+
+  ```
+  Done
+  ```
+
+  返回的Channel被关闭时才会返回非空的值；
+
+  - 如果当前`Context`被取消就会返回`Canceled`错误；
+  - 如果当前`Context`超时就会返回`DeadlineExceeded`错误；
+
+- `Value`方法会从`Context`中返回键对应的值，对于同一个上下文来说，多次调用`Value` 并传入相同的`Key`会返回相同的结果，该方法仅用于传递跨API和进程间跟请求域的数据；
+
+## Contex示例
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"sync"
+
+	"time"
+)
+
+var wg sync.WaitGroup
+
+func worker(ctx context.Context) {
+	go worker2(ctx)
+LOOP:
+	for {
+		fmt.Println("worker")
+		time.Sleep(time.Second)
+		select {
+		case <-ctx.Done(): // 等待上级通知
+			break LOOP
+		default:
+		}
+	}
+	wg.Done()
+}
+
+func worker2(ctx context.Context) {
+LOOP:
+	for {
+		fmt.Println("worker2")
+		time.Sleep(time.Second)
+		select {
+		case <-ctx.Done(): // 等待上级通知
+			break LOOP
+		default:
+		}
+	}
+}
+func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	wg.Add(1)
+	go worker(ctx)
+	time.Sleep(time.Second * 3)
+	cancel() // 通知子goroutine结束
+	wg.Wait()
+	fmt.Println("over")
+}
+```
+
+### Background()和TODO()
+
+Go内置两个函数：`Background()`和`TODO()`，这两个函数分别返回一个实现了`Context`接口的`background`和`todo`。我们代码中最开始都是以这两个内置的上下文对象作为最顶层的`partent context`，衍生出更多的子上下文对象。
+
+`Background()`主要用于main函数、初始化以及测试代码中，作为Context这个树结构的最顶层的Context，也就是根Context。
+
+`TODO()`，它目前还不知道具体的使用场景，如果我们不知道该使用什么Context的时候，可以使用这个。
+
+`background`和`todo`本质上都是`emptyCtx`结构体类型，是一个不可取消，没有设置截止时间，没有携带任何值的Context。
+
+## With系列函数
+
+此外，`context`包中还定义了四个With系列函数。
+
+### WithCancel
+
+`WithCancel`的函数签名如下：
+
+```go
+func WithCancel(parent Context) (ctx Context, cancel CancelFunc)
+```
+
+`WithCancel`返回带有新Done通道的父节点的副本。当调用返回的cancel函数或当关闭父上下文的Done通道时，将关闭返回上下文的Done通道，无论先发生什么情况。
+
+取消此上下文将释放与其关联的资源，因此代码应该在此上下文中运行的操作完成后立即调用cancel。
+
+```go
+func gen(ctx context.Context) <-chan int {
+		dst := make(chan int)
+		n := 1
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return // return结束该goroutine，防止泄露
+				case dst <- n:
+					n++
+				}
+			}
+		}()
+		return dst
+	}
+func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // 当我们取完需要的整数后调用cancel
+
+	for n := range gen(ctx) {
+		fmt.Println(n)
+		if n == 5 {
+			break
+		}
+	}
+}
+```
+
+上面的示例代码中，`gen`函数在单独的goroutine中生成整数并将它们发送到返回的通道。 gen的调用者在使用生成的整数之后需要取消上下文，以免`gen`启动的内部goroutine发生泄漏。
+
+### WithDeadline
+
+`WithDeadline`的函数签名如下：
+
+```go
+func WithDeadline(parent Context, deadline time.Time) (Context, CancelFunc)
+```
+
+返回父上下文的副本，并将deadline调整为不迟于d。如果父上下文的deadline已经早于d，则WithDeadline(parent, d)在语义上等同于父上下文。当截止日过期时，当调用返回的cancel函数时，或者当父上下文的Done通道关闭时，返回上下文的Done通道将被关闭，以最先发生的情况为准。
+
+取消此上下文将释放与其关联的资源，因此代码应该在此上下文中运行的操作完成后立即调用cancel。
+
+```go
+func main() {
+	d := time.Now().Add(50 * time.Millisecond)
+	ctx, cancel := context.WithDeadline(context.Background(), d)
+
+	// 尽管ctx会过期，但在任何情况下调用它的cancel函数都是很好的实践。
+	// 如果不这样做，可能会使上下文及其父类存活的时间超过必要的时间。
+	defer cancel()
+
+	select {
+	case <-time.After(1 * time.Second):
+		fmt.Println("overslept")
+	case <-ctx.Done():
+		fmt.Println(ctx.Err())
+	}
+}
+```
+
+上面的代码中，定义了一个50毫秒之后过期的deadline，然后我们调用`context.WithDeadline(context.Background(), d)`得到一个上下文（ctx）和一个取消函数（cancel），然后使用一个select让主程序陷入等待：等待1秒后打印`overslept`退出或者等待ctx过期后退出。
+
+在上面的示例代码中，因为ctx 50毫秒后就会过期，所以`ctx.Done()`会先接收到context到期通知，并且会打印ctx.Err()的内容。
+
+### WithTimeout
+
+`WithTimeout`的函数签名如下：
+
+```go
+func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc)
+```
+
+`WithTimeout`返回`WithDeadline(parent, time.Now().Add(timeout))`。
+
+取消此上下文将释放与其相关的资源，因此代码应该在此上下文中运行的操作完成后立即调用cancel，通常用于数据库或者网络连接的超时控制。具体示例如下：
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"sync"
+
+	"time"
+)
+
+// context.WithTimeout
+
+var wg sync.WaitGroup
+
+func worker(ctx context.Context) {
+LOOP:
+	for {
+		fmt.Println("db connecting ...")
+		time.Sleep(time.Millisecond * 10) // 假设正常连接数据库耗时10毫秒
+		select {
+		case <-ctx.Done(): // 50毫秒后自动调用
+			break LOOP
+		default:
+		}
+	}
+	fmt.Println("worker done!")
+	wg.Done()
+}
+
+func main() {
+	// 设置一个50毫秒的超时
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
+	wg.Add(1)
+	go worker(ctx)
+	time.Sleep(time.Second * 5)
+	cancel() // 通知子goroutine结束
+	wg.Wait()
+	fmt.Println("over")
+}
+```
+
+### WithValue
+
+`WithValue`函数能够将请求作用域的数据与 Context 对象建立关系。声明如下：
+
+```go
+func WithValue(parent Context, key, val interface{}) Context
+```
+
+`WithValue`返回父节点的副本，其中与key关联的值为val。
+
+仅对API和进程间传递请求域的数据使用上下文值，而不是使用它来传递可选参数给函数。
+
+所提供的键必须是可比较的，并且不应该是`string`类型或任何其他内置类型，以避免使用上下文在包之间发生冲突。`WithValue`的用户应该为键定义自己的类型。为了避免在分配给interface{}时进行分配，上下文键通常具有具体类型`struct{}`。或者，导出的上下文关键变量的静态类型应该是指针或接口。
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"sync"
+
+	"time"
+)
+
+// context.WithValue
+
+type TraceCode string
+
+var wg sync.WaitGroup
+
+func worker(ctx context.Context) {
+	key := TraceCode("TRACE_CODE")
+	traceCode, ok := ctx.Value(key).(string) // 在子goroutine中获取trace code
+	if !ok {
+		fmt.Println("invalid trace code")
+	}
+LOOP:
+	for {
+		fmt.Printf("worker, trace code:%s\n", traceCode)
+		time.Sleep(time.Millisecond * 10) // 假设正常连接数据库耗时10毫秒
+		select {
+		case <-ctx.Done(): // 50毫秒后自动调用
+			break LOOP
+		default:
+		}
+	}
+	fmt.Println("worker done!")
+	wg.Done()
+}
+
+func main() {
+	// 设置一个50毫秒的超时
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
+	// 在系统的入口中设置trace code传递给后续启动的goroutine实现日志数据聚合
+	ctx = context.WithValue(ctx, TraceCode("TRACE_CODE"), "12512312234")
+	wg.Add(1)
+	go worker(ctx)
+	time.Sleep(time.Second * 5)
+	cancel() // 通知子goroutine结束
+	wg.Wait()
+	fmt.Println("over")
+}
+```
+
+## 使用Context的注意事项
+
+- 推荐以参数的方式显示传递Context
+- 以Context作为参数的函数方法，应该把Context作为第一个参数。
+- 给一个函数方法传递Context的时候，不要传递nil，如果不知道传递什么，就使用context.TODO()
+- Context的Value相关方法应该传递请求域的必要数据，不应该用于传递可选参数
+- Context是线程安全的，可以放心的在多个goroutine中传递
+
+# 第二十章、日志收集项目
+
+**项目架构**
+
+![image-20211103155719950](E:\typroa_pic\image-20211103155719950.png)
+
+
+
+为什么要自己写，不用ELK？
+
+ELK：部署的时候麻烦，每一个filebeat都需要一个配置文件
+
+**使用etcd来管理被收集的日志项**
+
+## 1.`kafka`
+
+### 1.`kafka`集群的架构
+
+![image-20211104110121570](E:\typroa_pic\image-20211104110121570.png)
+
+**1.`broker `：**
+
+​		指部署了Kafka实例的服务器节点，每个服务器上有一个或多个kafka的实例，姑且认为每个broker对应一台服务器。每个kafka集群内的broker都有一个**不重复**的编号。
+
+**2.`topic`：**
+
+​		消息 的主题，可以理解为消息的分类，kafka的数据就保存在topic。在每个broker上都可以创建多个topic。实际应用中通常是一个业务线建一个topic。
+
+**3.`partition`：**
+
+​		分区，把同一个`topic`分成不同的分区，每个topic可以有多个分区，分区的作用是负载，提高`kafka`的吞吐量。同一个`topic`在不同分区的数据十不重复的，`partition`的表现形式就是一个一个的文件夹。
+
+​	**`leader`：**分区的主节点
+
+​	**`follower`：**分区的从节点，**从`leader`中拉取数据信息**
+
+### 2.生产者往Kafka发送数据的流程
+
+![image-20211102155600376](E:\typroa_pic\image-20211102155600376.png)
+
+1.生产者从`Kafka`集群获取分区`leader`信息
+
+2.生产者将消息发送给`leader`
+
+3.`leader`将消息写入本地磁盘
+
+4.`follower`从`leader`拉去消息数据
+
+5.`follower`将消息写入本地磁盘后向`leader`发送ACK
+
+6.`leader`收到所有的`follower`的ACK之后向生产者发送ACK
+
+### 3. ACK应答机制：0、1、all
+
+生产者往kafka发送数据的模式
+
+0：表示生产者往集群发送数据不需要等到集群的返回，不确保消息发送成功。安全性最低但是效率最高。
+
+1：表示生产者往集群发送数据只要leader应答就可以发送下一条，只确保`leader`发送成功
+
+all：表示生产者往集群发送数据需要所有的`follower`都完成从leader的同步才会发送下一条，确保`leader`发送成功和所有的副本都完成备份。安全性最高，但是效率最低。
+
+### 4. 选择partition的原则
+
+那在kafka中，如果某个`topic`有多个`partition`，`producer`又怎么知道该将数据发往哪个`partition`呢?`kafka`中有几个原则:
+
+1. `partition`在写入的时候可以指定需要写入的`partition`，如果有指定，则写入对应的`partition`。
+
+2. 如果没有指定`partition`，但是设置了数据的key，则会根据`key`的值hash出一个`partition`。
+
+3. 如果既没指定`partition`，又没有设置`key`，则会采用轮询方式，即每次取一小段时间的数据写入某个`partition`，下一小段的时间写入下一个`partition`。
+
+### 5.分区存储文件的原理
+
+![image-20211103144817785](E:\typroa_pic\image-20211103144817785.png)
+
+​			每个`partition`都是一个有序并且不可变的消息记录集合。当新的数据写入时，就被追加到`partition`的未尾。在每个`partition`中，每条消息都会被分配一个顺序的唯一标识，这个标识被称为`offset`，即偏移量。注意，`Kafka`只保证在同一个`partition`内部消息是有序的，在不同`partition`之间，并不能保证消息有序。
+
+**因为加入了offset标识，所以可以顺序读，阔以kafka速度快**
+
+
+
+### 6.消费者消费数据的原理
+
+![image-20211103144523596](E:\typroa_pic\image-20211103144523596.png)
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/Shopify/sarama"
+)
+
+func main(){
+	consumer,err:=sarama.NewConsumer([]string{"127.0.0.1:9092"},nil)
+	if err!=nil{
+		fmt.Printf("fail to start consumer,err:%v\n",err)
+		return
+	}
+	partitionLisy,err:=consumer.Partitions("redis_log")	//  根据topic取到所有的分区
+	if err!=nil{
+		fmt.Printf("fail to get list of partition,err:%v\n",err)
+		return
+	}
+	fmt.Println("分区列表：",partitionLisy)
+	for partion:=range partitionLisy{	//遍历所有分区
+		// 针对每个分区创建一个对应分区的消费者
+		pc,err:=consumer.ConsumePartition("redis_log",int32(partion),sarama.OffsetNewest)
+		if err!=nil{
+			fmt.Printf("fail to start consumer for partion %d,err:%v\n",partion,err)
+			return
+		}
+		defer pc.AsyncClose()
+
+		// 异步从每个分区消费信息
+		go func(sarama.PartitionConsumer){
+			for msg:=range pc.Messages(){
+				fmt.Printf("Partition:%d  Offset:%d  Key:%v  Value:%s\n",msg.Partition,msg.Offset,msg.Key,msg.Value)
+			}
+		}(pc)
+	}
+	select {
+
+	}
+}
+```
+
+
+
+## 2.LogAgent的工作流程
+
+打开kafka和zookeeper------管理员权限运行
+
+```bash
+bin\windows\zookeeper-server-start.bat config\zookeeper.properties
+```
+
+```bash
+bin\windows\kafka-server-start.bat config\server.properties
+```
+
+
+
+### 1.读日志 ---`tailf`第三方库
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/hpcloud/tail"
+	"time"
+)
+
+func main()  {
+	fileName:="E:/Goproject/src/go_Code/logagent/main/mylog.txt"
+	config:=tail.Config{
+		ReOpen: true,		//重新打开
+		Follow: true,		//是否跟随
+		Location: &tail.SeekInfo{Offset: 0,Whence: 2},		//从文件的哪个地方开始读
+		MustExist: false,		//文件不存在不报错
+		Poll: true,
+	}
+	tails,err:=tail.TailFile(fileName,config)
+	if err!=nil{
+		fmt.Println("tail file failed,err: ",err)
+		return
+	}
+	var(
+		line *tail.Line
+		ok bool
+	)
+	for {
+		line,ok= <-tails.Lines
+		if !ok{
+			fmt.Printf("tail file close reopen,filename:%s\n",tails.Filename)
+			time.Sleep(time.Second)
+			continue
+		}
+		fmt.Printf("line:%s\n",line.Text)
+	}
+}
+```
+
+### 2.往kafka写日志 ---`sarama`第三方库
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/Shopify/sarama"
+)
+
+func main() {
+	config:=sarama.NewConfig()
+
+	config.Producer.RequiredAcks=sarama.WaitForAll  //第三种ACK应答机制，发送完数据等leader和follower确认
+	config.Producer.Partitioner=sarama.NewRandomPartitioner //随机新选择一个分区
+	config.Producer.Return.Successes=true	//成功交付的消息将在success_channel返回
+
+	//构造一个消息
+	msg:=&sarama.ProducerMessage{}
+	msg.Topic="web_log"
+	msg.Value=sarama.StringEncoder("this is a test log")
+
+	//连接kafka
+	client,err:=sarama.NewSyncProducer([]string{"127.0.0.1:9092"},config)
+	if err!=nil{
+		fmt.Println("producer closed, err:",err)
+		return
+	}
+	fmt.Println("连接Kafka成功")
+	defer client.Close()
+	pid,offset,err:=client.SendMessage(msg)
+	if err!=nil{
+		fmt.Println("send msg faild, err:",err)
+		return
+	}
+	fmt.Printf("pid:%v , offset: %v",pid,offset)
+	fmt.Println("发送成功")
+}
+```
+
+
+
+### 3.kafka终端读取数据
+
+```bash
+bin\windows\kafka-console-consumer.bat --bootstrap-server=127.0.0.1:9092 --topic=game_log --from-beginning
+```
+
+### 4.配置文件ini
+
+**gopkg.in.ini.v1**
+
+**1.创建ini文件**
+
+```ini
+[kafka]
+address=127.0.0.1:9092
+topic=game_log
+
+[taillog]
+filename=./mylog.txt
+```
+
+**2.创建结构体映射**
+
+```go
+package conf
+
+type AppConf struct {
+	KafkaConf `ini:"kafka"`  //名称和ini文件对应
+	TaillogConf`ini:"taillog"`
+}
+
+
+type KafkaConf struct {
+	Address string`ini:"address"`
+	Topic string`ini:"topic"`
+}
+
+
+type TaillogConf struct {
+	FileName string`ini:"filename"`
+}
+
+```
+
+**3.main函数创建结构体指针并完成映射**
+
+```go
+var(
+	cfg =new(conf.AppConf)
+)//创建全局结构体指针
+
+err:=ini.MapTo(cfg,"./conf/config.ini")
+
+cfg.KafkaConf.Address
+cfg.TaillogConf.FileName
+```
+
+## 3.etcd
+
+![image-20211104163257739](E:\typroa_pic\image-20211104163257739.png)
+
+​		从etcd的架构图中我们可以看到，etcd主要分为四个部分。
+
+`HTTP Server`:用于处理用户发送的API请求以及其它etcd节点的同步与心跳信息请求。
+
+`Store`:用于处理etcd支持的各类功能的事务，包括数据索引、节点状态变更、监控与反馈、事件处理与执行等等，是etcd对用户提供的大多数API功能的具体实现。
+
+`Raft`: Raft强一致性算法的具体实现，是etcd 的核心。
+
+`WAL: Write Ahead Log` (预写式日志)，是etcd 的数据存储方式。除了在内存中存有所有数据的状态以及节点的索引以外，etcd就通过WAL进行持久化存储。WAL中，所有的数据提交前都会事先记录日志。Snapshot是为了防止数据过多而进行的状态快照;Entry表示存储的具体日志内容。
+
+​		[etcd](https://etcd.io/)是使用Go语言开发的一个开源的、高可用的分布式key-value存储系统，可以用于配置共享和服务的注册和发现。
+
+类似项目有zookeeper和consul。
+
+etcd具有以下特点：
+
+- 完全复制：集群中的每个节点都可以使用完整的存档
+- 高可用性：Etcd可用于避免硬件的单点故障或网络问题
+- 一致性：每次读取都会返回跨多主机的最新写入
+- 简单：包括一个定义良好、面向用户的API（gRPC）
+- 安全：实现了带有可选的客户端证书身份验证的自动化TLS
+- 快速：每秒10000次写入的基准速度
+- 可靠：使用Raft算法实现了强一致、高可用的服务存储目录
+
+
+
+### 服务发现
+
+服务发现要解决的也是分布式系统中最常见的问题之一，即在同一个分布式集群中的进程或服务，要如何才能找到对方并建立连接。本质上来说，服务发现就是想要了解集群中是否有进程在监听 udp 或 tcp 端口，并且通过名字就可以查找和连接。
+
+![img](E:\typroa_pic\etcd_01.png)
+
+### 配置中心
+
+将一些配置信息放到 etcd 上进行集中管理。
+
+这类场景的使用方式通常是这样：应用在启动的时候主动从 etcd 获取一次配置信息，同时，在 etcd 节点上注册一个 Watcher 并等待，以后每次配置有更新的时候，etcd 都会实时通知订阅者，以此达到获取最新配置信息的目的。
+
+### 分布式锁
+
+​		因为 etcd 使用 Raft 算法保持了数据的强一致性，某次操作存储到集群中的值必然是全局一致的，所以很容易实现分布式锁。锁服务有两种使用方式，一是保持独占，二是控制时序。
+
+- **保持独占即所有获取锁的用户最终只有一个可以得到**。etcd 为此提供了一套实现分布式锁原子操作 CAS（`CompareAndSwap`）的 API。通过设置`prevExist`值，可以保证在多个节点同时去创建某个目录时，只有一个成功。而创建成功的用户就可以认为是获得了锁。
+- 控制时序，即所有想要获得锁的用户都会被安排执行，但是**获得锁的顺序也是全局唯一的，同时决定了执行顺序**。etcd 为此也提供了一套 API（自动创建有序键），对一个目录建值时指定为`POST`动作，这样 etcd 会自动在目录下生成一个当前最大的值为键，存储这个新的值（客户端编号）。同时还可以使用 API 按顺序列出所有当前目录下的键值。此时这些键的值就是客户端的时序，而这些键中存储的值可以是代表客户端的编号。
+
+![img](E:\typroa_pic\etcd_02.png)
+
+### 为什么不选择ZooKeeper？
+
+1. 部署维护复杂，其使用的`Paxos`强一致性算法复杂难懂。官方只提供了`Java`和`C`两种语言的接口。
+2. 使用`Java`编写引入大量的依赖。运维人员维护起来比较麻烦。
+3. 最近几年发展缓慢，不如`etcd`和`consul`等后起之秀。
+
+### 为什么选择etcd？
+
+1. 简单。使用 Go 语言编写部署简单；支持HTTP/JSON API,使用简单；使用 Raft 算法保证强一致性让用户易于理解。
+2. etcd 默认数据一更新就进行持久化。
+3. etcd 支持 SSL 客户端安全认证。
+
+最后，etcd 作为一个年轻的项目，正在高速迭代和开发中，这既是一个优点，也是一个缺点。优点是它的未来具有无限的可能性，缺点是无法得到大项目长时间使用的检验。然而，目前 `CoreOS`、`Kubernetes`和`CloudFoundry`等知名项目均在生产环境中使用了`etcd`，所以总的来说，etcd值得你去尝试。
+
+### Go语言操作etcd
+
+这里使用官方的[etcd/clientv3](https://github.com/etcd-io/etcd/tree/master/client/v3)包来连接etcd并进行相关操作。
+
+### 安装
+
+```bash
+go get go.etcd.io/etcd/clientv3
+```
+
+### put和get操作
+
+`put`命令用来设置键值对数据，`get`命令用来根据key获取值。
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"go.etcd.io/etcd/clientv3"
+	"time"
+)
+
+// etcd client put/get demo
+// use etcd/clientv3
+
+func main() {
+	cli, err := clientv3.New(clientv3.Config{
+		Endpoints:   []string{"127.0.0.1:2379"},
+		DialTimeout: 5 * time.Second,
+	})
+	if err != nil {
+		// handle error!
+		fmt.Printf("connect to etcd failed, err:%v\n", err)
+		return
+	}
+	fmt.Println("connect to etcd success")
+	defer cli.Close()
+	// put
+	fmt.Println("准备put")
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	_, err = cli.Put(ctx, "q1mi", "dsb")
+	cancel()
+	if err != nil {
+		fmt.Printf("put to etcd failed, err:%v\n", err)
+		return
+	}
+
+	// get
+	fmt.Println("准备get")
+	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+	resp, err := cli.Get(ctx, "wangye")
+	cancel()
+
+	if err != nil {
+		fmt.Printf("get from etcd failed, err:%v\n", err)
+		return
+	}
+	for _, ev := range resp.Kvs {
+		fmt.Printf("%s:%s\n", ev.Key, ev.Value)
+	}
+}
+```
+
+### watch操作
+
+`watch`用来获取未来更改的通知。
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"go.etcd.io/etcd/clientv3"
+	"time"
+)
+
+// etcd client put/get demo
+// use etcd/clientv3
+
+func main() {
+	cli, err := clientv3.New(clientv3.Config{
+		Endpoints:   []string{"127.0.0.1:2379"},
+		DialTimeout: 5 * time.Second,
+	})
+	if err != nil {
+		fmt.Printf("connect to etcd failed, err:%v\n", err)
+		return
+	}
+	fmt.Println("connect to etcd success")
+	defer cli.Close()
+	// watch key:wangye change
+
+	rch := cli.Watch(context.Background(),"wangye") // <-chan WatchResponse
+
+	for wresp := range rch {
+		for _, ev := range wresp.Events {
+			fmt.Printf("Type: %s Key:%s Value:%s\n", ev.Type, ev.Kv.Key, ev.Kv.Value)
+		}
+	}
+}
+```
+
+
+
+### 基于etcd实现分布式锁
+
+`go.etcd.io/etcd/clientv3/concurrency`在etcd之上实现并发操作，如分布式锁、屏障和选举。
+
+导入该包：
+
+```go
+import "go.etcd.io/etcd/clientv3/concurrency"
+```
+
+基于etcd实现的分布式锁示例：
+
+```go
+cli, err := clientv3.New(clientv3.Config{Endpoints: endpoints})
+if err != nil {
+    log.Fatal(err)
+}
+defer cli.Close()
+
+// 创建两个单独的会话用来演示锁竞争
+s1, err := concurrency.NewSession(cli)
+if err != nil {
+    log.Fatal(err)
+}
+defer s1.Close()
+m1 := concurrency.NewMutex(s1, "/my-lock/")
+
+s2, err := concurrency.NewSession(cli)
+if err != nil {
+    log.Fatal(err)
+}
+defer s2.Close()
+m2 := concurrency.NewMutex(s2, "/my-lock/")
+
+// 会话s1获取锁
+if err := m1.Lock(context.TODO()); err != nil {
+    log.Fatal(err)
+}
+fmt.Println("acquired lock for s1")
+
+m2Locked := make(chan struct{})
+go func() {
+    defer close(m2Locked)
+    // 等待直到会话s1释放了/my-lock/的锁
+    if err := m2.Lock(context.TODO()); err != nil {
+        log.Fatal(err)
+    }
+}()
+
+if err := m1.Unlock(context.TODO()); err != nil {
+    log.Fatal(err)
+}
+fmt.Println("released lock for s1")
+
+<-m2Locked
+fmt.Println("acquired lock for s2")
+```
+
+输出：
+
+```bash
+acquired lock for s1
+released lock for s1
+acquired lock for s2
+```
+
+### 其他操作
+
+其他操作请查看[etcd/clientv3官方文档](https://github.com/etcd-io/etcd/tree/master/client/v3)。
+
+
+
+## 4.要弄明白的点
+
+1.Raft协议
+
+​	1.选举
+
+​	2.日志复制机制
+
+​	3.异常处理（脑裂）
+
+​	4.zookeeper的zad协议的区别
+
+2.etcd的watch
+
+​	1.底层如何实现给watch给客户发通知（websocket）
+
+
+
+## 5.LogTransfer
+
+从kafka里面把日志取出来，写入ES，使用Kibana做可视化的展示
+
+### 5.1 Elastic search--ES 搜索引擎
+
+### go操作es
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"github.com/olivere/elastic/v7"
+)
+
+type student struct {
+	Name string `json:"name"`
+	Age int `json:"age"`
+	Married bool `json:"married"`
+}
+
+func main(){
+	//1、初始化连接
+	client,err:=elastic.NewClient(elastic.SetURL("http://127.0.0.1:9200"))
+	if err!=nil{
+		panic(err)
+	}
+	fmt.Println("connect to es success")
+
+	p1:= student{
+		Name: "Rion",
+		Age:22,
+		Married: false,
+	}
+
+	//链式操作---->结构体连续调用多个方法用 . 拼接，需注意，各个方法要返回该结构体指针类型
+	put1, err := client.Index().
+		Index("student").
+		BodyJson(p1).
+		Do(context.Background())
+	if err != nil {
+		// Handle error
+		panic(err)
+	}
+	fmt.Printf("Indexed stydent %s to index %s, type %s\n", put1.Id, put1.Index, put1.Type)
+
+
+}
+```
+
+#### ES基本概念与关系型数据库的比较
+
+|                     ES概念                     |    关系型数据库    |
+| :--------------------------------------------: | :----------------: |
+|           Index（索引）支持全文检索            | Database（数据库） |
+|                  Type（类型）                  |    Table（表）     |
+| Document（文档），不同文档可以有不同的字段集合 |   Row（数据行）    |
+|                 Field（字段）                  |  Column（数据列）  |
+|                Mapping（映射）                 |   Schema（模式）   |
+
+
+
+## 6.系统监控
+
+gopsutil做系统监控信息的菜鸡，写入influxDB，使用grafana作展示
+
+prometheus监控：采集性能指标数据，保存起来，用grafana作展示
+
+![image-20211108165900805](E:\typroa_pic\image-20211108165900805.png)
+
+
+
+# 第二十一章、Gin框架
+
+## 1.简单使用
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+
+//Json格式
+func Gojson(c *gin.Context){
+	c.JSON(http.StatusOK,gin.H{
+		"name":"admin",
+		"age":24,
+	})
+}
+
+//XML格式
+func Gohtml(c *gin.Context){
+	c.XML(http.StatusOK,gin.H{
+		"name":"admin",
+		"age":24,
+	})
+}
+
+func main() {
+	engine:=gin.Default()//实例化一个对象
+	engine.GET("/gojson",Gojson)
+	engine.GET("/gohtml",Gohtml)
+	engine.Run()//监听端口，默认8080端口可以改动
+
+}
+```
+
+## 2.参数接收
+
+三种接收方式：
+
+```cpp
+package main
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+
+
+func main() {
+	engine:=gin.Default()
+     //URL参数
+	engine.GET("/get",func(c *gin.Context){
+		fmt.Println(c.Query("name"))
+		fmt.Println(c.Query("age"))
+		c.String(http.StatusOK,"get")
+	})
+
+    //表单参数 post
+	engine.POST("/post", func(c *gin.Context) {
+		fmt.Println(c.PostForm("name"))
+		fmt.Println(c.PostForm("age"))
+		c.String(http.StatusOK,"post")
+	})
+
+     //API参数
+	engine.GET("/getUser/:id", func(c *gin.Context) {
+		fmt.Println(c.Param("id"))
+		c.String(http.StatusOK,"getUser")
+	})
+
+	engine.Run()
+
+}
+```
+
+## 3.参数绑定
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+
+type User struct {
+	Name string `form:"name" binding:"required,len=6"`
+	Age int `form:"age" binding:"numeric,min=18,max=100"`
+}
+
+
+func main() {
+	engine:=gin.Default()
+	engine.GET("/get",func(c *gin.Context){
+		var user User
+		err:=c.ShouldBind(&user)
+		if err!=nil{
+			c.String(http.StatusOK,err.Error())
+		}else {
+			c.String(http.StatusOK,"name->%s,age=%d",user.Name,user.Age)
+		}
+	})
+
+	engine.Run()
+
+}
+```
+
+## 4.上传文件
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+
+func main() {
+	engine:=gin.Default()
+	engine.POST("/upload", func(c *gin.Context) {
+		//标单取文件
+		file,_:=c.FormFile("file")
+		log.Println(file.Filename)
+		//传到项目根目录，名称不修改
+		c.SaveUploadedFile(file,file.Filename)
+		//打印信息
+		c.String(http.StatusOK,fmt.Sprintf("%s upload! ",file.Filename))
+
+	})
+	engine.Run()
+
+}
+```
+
+## 5.上传多个文件
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+
+
+func main() {
+	engine:=gin.Default()
+	engine.MaxMultipartMemory=8<<20
+	engine.POST("/upload", func(c *gin.Context) {
+		//标单取文件,限制大小 8MB，gin默认为32MB
+		form,err:=c.MultipartForm()
+		if err!=nil{
+			c.String(http.StatusOK,fmt.Sprintf("get err %s",err.Error()))
+		}
+		//获取所有图片
+		file:=form.File["file"]
+
+		//遍历所有图片
+		for _,v := range file{
+			//逐个存储
+			if err=c.SaveUploadedFile(v,v.Filename);err!=nil{
+				c.String(http.StatusOK,fmt.Sprintf("upload err %s",err.Error()))
+				return
+			}
+		}
+		c.String(http.StatusOK,fmt.Sprintf("upload ok %d files",len(file)))
+	})
+	engine.Run()
+
+}
+```
+
+## 6.Gin路由原理
+
+将各个路由组合成一颗前缀树
+
+## 7.gin数据解析和绑定
+
+**JSON格式：**
+
+```GO
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+
+//定义接收数据的结构体
+type Login struct {
+	//binding:"required" 修饰的字段，必须存在，不能为空
+	User string `form:"username" json:"user" uri:"user" xml:"user" binding:"required"`
+	Passwd string `form:"passwd" json:"passwd" uri:"passwd" xml:"passwd" binding:"required"`
+}
+func main() {
+	engine:=gin.Default()
+	engine.POST("loginJSON", func(c *gin.Context) {
+		//声明接收变量
+		var json Login
+		//将request的body中的数据  自动按照json格式解析到结构体
+		if err:=c.ShouldBindJSON(&json);err!=nil{
+			//返回错误信息
+			c.JSON(http.StatusBadRequest,gin.H{
+				"errr":err.Error(),
+			})
+			return
+		}
+
+		//判断用户名密码是否正确
+		if json.User!="root"||json.Passwd!="admin"{
+			c.JSON(http.StatusBadRequest,gin.H{"status":"504"})
+			return
+		}
+		c.JSON(http.StatusOK,gin.H{
+			"status":200,
+		})
+	})
+	engine.Run()
+
+}
+```
+
+## 8.HTML渲染
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+
+
+func main() {
+	engine:=gin.Default()
+
+	// 加载模板文件
+	engine.LoadHTMLGlob("templates/*")//传路径
+	//engine.LoadHTMLFiles("templates/index.html")//传文件
+	engine.GET("/index", func(c *gin.Context) {
+		//根据文件名渲染
+		//最终json将title替换
+		c.HTML(http.StatusOK,"index.html",gin.H{"title":"我的标题"})
+	})
+
+	engine.Run()
+
+}
+```
+
+## 9.重定向
+
+### HTTP重定向
+
+HTTP 重定向很容易。 内部、外部重定向均支持。
+
+```go
+r.GET("/test", func(c *gin.Context) {
+	c.Redirect(http.StatusMovedPermanently, "http://www.sogo.com/")
+})
+```
+
+### 路由重定向
+
+路由重定向，使用`HandleContext`：
+
+```go
+r.GET("/test", func(c *gin.Context) {
+    // 指定重定向的URL
+    c.Request.URL.Path = "/test2"
+    r.HandleContext(c)
+})
+r.GET("/test2", func(c *gin.Context) {
+    c.JSON(http.StatusOK, gin.H{"hello": "world"})
+})
+```
+
+## 10.同步异步
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"log"
+	"time"
+)
+
+
+func main() {
+	engine:=gin.Default()
+
+	//异步
+	engine.GET("/long_async", func(c *gin.Context) {
+		//需要使用c的副本
+		copyContex:=c.Copy()
+		//异步处理
+		go func(){
+			time.Sleep(time.Second*3)
+			log.Println(  "异步执行"+copyContex.Request.URL.Path)
+		}()
+
+	})
+
+	//同步
+	engine.GET("/long_sync", func(c    *gin.Context){
+		time.Sleep(time.Second*3)
+		log.Println("同步执行"+c.Request.URL.Path)
+	})
+
+	engine.Run()
+
+}
+```
+
+## 11.Gin中间件
+
+Gin框架允许开发者在处理请求的过程中，加入用户自己的钩子（Hook）函数。这个钩子函数就叫中间件，中间件适合处理一些公共的业务逻辑，比如登录认证、权限校验、数据分页、记录日志、耗时统计等。
+
+### 定义中间件
+
+Gin中的中间件必须是一个`gin.HandlerFunc`类型。例如我们像下面的代码一样定义一个统计请求耗时的中间件。
+
+```go
+// StatCost 是一个统计耗时请求耗时的中间件
+func StatCost() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		c.Set("name", "小王子") // 可以通过c.Set在请求上下文中设置值，后续的处理函数能够取到该值
+		// 调用该请求的剩余处理程序
+		c.Next()
+		// 不调用该请求的剩余处理程序
+		// c.Abort()
+		// 计算耗时
+		cost := time.Since(start)
+		log.Println(cost)
+	}
+}
+```
+
+### 注册中间件
+
+在gin框架中，我们可以为每个路由添加任意数量的中间件。
+
+#### 为全局路由注册
+
+```go
+func main() {
+	// 新建一个没有任何默认中间件的路由
+	r := gin.New()
+	// 注册一个全局中间件
+	r.Use(StatCost())
+	
+	r.GET("/test", func(c *gin.Context) {
+		name := c.MustGet("name").(string) // 从上下文取值
+		log.Println(name)
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Hello world!",
+		})
+	})
+	r.Run()
+}
+```
+
+#### 为某个路由单独注册
+
+```go
+// 给/test2路由单独注册中间件（可注册多个）
+	r.GET("/test2", StatCost(), func(c *gin.Context) {
+		name := c.MustGet("name").(string) // 从上下文取值
+		log.Println(name)
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Hello world!",
+		})
+	})
+```
+
+#### 为路由组注册中间件
+
+为路由组注册中间件有以下两种写法。
+
+写法1：
+
+```go
+shopGroup := r.Group("/shop", StatCost())
+{
+    shopGroup.GET("/index", func(c *gin.Context) {...})
+    ...
+}
+```
+
+写法2：
+
+```go
+shopGroup := r.Group("/shop")
+shopGroup.Use(StatCost())
+{
+    shopGroup.GET("/index", func(c *gin.Context) {...})
+    ...
+}
+```
+
+### 中间件注意事项
+
+#### gin默认中间件
+
+`gin.Default()`默认使用了`Logger`和`Recovery`中间件，其中：
+
+- `Logger`中间件将日志写入`gin.DefaultWriter`，即使配置了`GIN_MODE=release`。
+- `Recovery`中间件会recover任何`panic`。如果有panic的话，会写入500响应码。
+
+如果不想使用上面两个默认的中间件，可以使用`gin.New()`新建一个没有任何默认中间件的路由。
+
+#### gin中间件中使用goroutine
+
+当在中间件或`handler`中启动新的`goroutine`时，**不能使用**原始的上下文（c *gin.Context），必须使用其只读副本（`c.Copy()`）。
+
+### next()方法
+
+中间件中的next方法，会使中间件执行调用方的剩余程序，等剩余程序处理完才会执行next之后的语句
+
+# 第二十二章、Raft
+
+是consoul 和 etcd 保持数据一致性的核心算法
+
+## 1.介绍
+
+​		Raft提供了一种在计算系统集群中分布状态机的通用方法,确保集群中的每个节点都同意一系列相同的状态转换它有许多开源参考实现，具有Go，C++，Java和scala中的完整规范实现。
+
+​		一个Raft 集群包含若干个服务器节点，通常是5个，这允许整个系统容忍2个节点的失效，每个节点处于以下三种状态之一：
+
+​	1.  `follower`(跟随者):所有节点都以`follower`的状态开始。如果没收到`leader`消息.则会变成` candidate`状态
+
+​	2.  `	candidate`(候选人〉:会向其他节点“拉选票”，如果得到大部分的票则成为`leader`，这个过程就叫做`Leader`选举(`Leader Election`)
+
+​	3.  `leader`(领导者):所有对系统的修改都会先经过`leader`
+
+## 2.raft一致性算法
+
+`Raft`通过选出一个`leader`来简化日志副本的管理，例如，日志项(`log entry`)只允许从`leader`流向`follower`
+
+基于`leader `的方法，`Raft`算法可以分解成三个子问题
+`Leader election` (领导选举):原来的`leader` 挂掉后，必须选出一个新的`leader`
+
+`Log replication`(日志复制):` leader` 从客户端接收日志，并复制到整个集群中
+
+`Safety` (安全性):如果有任意的`server`将日志项回放到状态机中了，那么其他的`server`只会回放相同的日志项
+
+## 3.动画演示
+
+http://thesecretlivesofdata.com/raft/

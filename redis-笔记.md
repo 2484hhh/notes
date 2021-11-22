@@ -121,17 +121,23 @@
   value -> string
   # 设置一个键值对->string:string
   SET key value
+  
   # 通过key得到value
   GET key
+  
   # 同时设置一个或多个 key-value 对
   MSET key value [key value ...]
+  
   # 同时查看过个key
   MGET key [key ...]
+  
   # 如果 key 已经存在并且是一个字符串， APPEND 命令将 value 追加到 key 原来的值的末尾
   # key: hello, value: world, append: 12345
   APPEND key value
+  
   # 返回 key 所储存的字符串值的长度
   STRLEN key
+  
   # 将 key 中储存的数字值减一。
   # 前提, value必须是数字字符串 -"12345"
   DECR key
@@ -167,26 +173,35 @@
   # 添加元素
   # 将一个或多个 member 元素加入到集合 key 当中，已经存在于集合的 member 元素将被忽略
   SADD key member [member ...]
+  
   # 遍历
   SMEMBERS key
+  
+  # 判断是否成员
+  SISMEMBER key
+  
   # 差集
   SDIFF key [key ...]
+  
   # 交集
   SINTER key [key ...]
+  
   # 并集
   SUNION key [key ...]
   ```
 
-- SortedSet 类型
+- ZSet 类型
 
   ```shell
   key -> string
   value -> sorted ([socre, member], [socre, member], ...)
   # 添加元素
   ZADD key score member [[score member] [score member] ...]
+  
   # 遍历
   ZRANGE key start stop [WITHSCORES] # -> 升序集合
   ZREVRANGE key start stop [WITHSCORES] # -> 降序集合
+  
   # 指定分数区间内元素的个数
   ZCOUNT key min max
   ```
@@ -200,12 +215,16 @@
   value -> hash ([key:value], [key:value], [key:value], ...)
   # 添加数据
   HSET key field value
+  
   # 取数据
   HGET key field
+  
   # 批量插入键值对
   HMSET key field value [field value ...]
+  
   # 批量取数据
   HMGET key field [field ...]
+  
   # 删除键值对
   HDEL key field [field ...]
   ```
@@ -215,6 +234,7 @@
   ```shell
   # 删除键值对
   DEL key [key ...]
+  
   # 查看key值
   KEYS pattern
   查找所有符合给定模式 pattern 的 key 。
@@ -222,10 +242,13 @@
   KEYS h?llo 匹配 hello ， hallo 和 hxllo 等。
   KEYS h*llo 匹配 hllo 和 heeeeello 等。
   KEYS h[ae]llo 匹配 hello 和 hallo ，但不匹配 hillo
+  
   # 给key设置生存时长
   EXPIRE key seconds
+  
   # 取消生存时长
   PERSIST key
+  
   # key对应的valued类型
   TYPE key
   ```
@@ -245,22 +268,29 @@
    # redis服务器绑定谁之后, 谁就能访问redis服务器
    # 任何客户端都能访问服务器, 需要注释该选项
    bind 127.0.0.1 192.168.1.100 
+   
    # 保护模式, 如果要远程客户端访问服务器, 该模式要关闭
    protected-mode yes
-   # reids服务器启动时候绑定的端口, 默认为6379
+   
+   # reids服务器启动时候绑定的端口, 默认为6379 
    port 6379
+   
    # 超时时长, 0位关闭该选项, >0则开启
    timeout 0
+   
    # 服务器启动之后不是守护进程
    daemonize no
    # 如果服务器是守护进程, 就会生成一个pid文件
    # ./ -> reids服务器启动时候对应的目录
    pidfile ./redis.pid
+   
    # 日志级别
     loglevel notice
+    
    # 如果服务器是守护进程, 才会写日志文件
     logfile "" -> 这是没写
     logfile ./redis.log
+    
     # redis中数据库的个数
     databases 16 
     	- 切换 select dbID [dbID == 0 ~ 16-1]
@@ -292,15 +322,20 @@
 save 900 1
 save 300 10
 save 60 10000
+
 # rdb文件的名字
 dbfilename dump.rdb
+
 # 生成的持久化文件保存的那个目录下, rdb和aof
 dir ./ 
+
 # 是不是要打开aof模式
 appendonly no
  -> 打开: yes
+ 
 # 设置aof文件的名字
 appendfilename "appendonly.aof"
+
 # aof更新的频率
 # appendfsync always
 appendfsync everysec

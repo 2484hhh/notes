@@ -696,11 +696,9 @@ set shiftwidth=4 ---设置gg=G缩进4个空格, 默认是缩进8个空格
 ​	**gcc -o main2 main.c -I./include -L./lib -ltest2**
 ​	
 动态库文件在编译的时候, 连接器需要使用参数-L找到库文件所在的路径;
-在执行的时候, 是加载器ldd根据动态库的路径进行加载的, 与编译的时候用的-L
-指定的路径无关.
+在执行的时候, 是加载器ldd根据动态库的路径进行加载的, 与编译的时候用的-L指定的路径无关.
 
-最常用的解决办法:将LD_LIBRARY_PATH环境变量加到用户级别的配置文件~/.bashrc中, 
-然后生效(. ~/.bashrc    source ~/.bashrc   退出终端然后再登录)
+最常用的解决办法:将LD_LIBRARY_PATH环境变量加到用户级别的配置文件~/.bashrc中, 然后生效(. ~/.bashrc    source ~/.bashrc   退出终端然后再登录)
 
 **把export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:库路径, 设置到∼/.bashrc文件中**
 
